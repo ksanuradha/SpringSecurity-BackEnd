@@ -1,20 +1,42 @@
 package com.example.springbootAcademy.security.controller;
 
-import com.example.springbootAcademy.security.dto.LoginRequest;
-import com.example.springbootAcademy.security.dto.LoginResponse;
-import com.example.springbootAcademy.security.service.JwtService;
+import com.example.springbootAcademy.security.model.User;
+import com.example.springbootAcademy.security.repository.UserRepo;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
+@RequestMapping("api/v1/user")
+@CrossOrigin
 public class LoginController {
     @Autowired
-    private JwtService jwtService;
+    private PasswordEncoder passwordEncoder;
 
-    @PostMapping("/authenticate")
-    public LoginResponse createJWTTokenAndLogin(@RequestBody LoginRequest loginRequest) throws Exception {
-        return jwtService.createJWTToken(loginRequest);
+    @Autowired
+    private UserRepo userRepo;
+
+    @PostMapping("/register")
+    public ResponseEntity<String> registerUser(@RequestBody User user) {
+        ResponseEntity response = null;
+        try{
+            String hashPassword = passwordEncoder.encode(user.getPassword());
+            user.setPassword(hashPassword);
+            user.setRole("ROLE_"+user.getRole());
+            User savedUser = userRepo.save(user);
+            if(savedUser.getId() > 0) {
+                response = ResponseEntity
+                            .status(HttpStatus.CREATED)
+                            .body("Given User Details are Sucessfully Registered.");
+
+            }
+        } catch (Exception ex) {
+            response = ResponseEntity
+                    .status(HttpStatus.BAD_REQUEST)
+                    .body("An Exception occured due to " + ex.getMessage());
+        }
+        return response;
     }
 }
